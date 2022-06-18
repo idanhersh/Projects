@@ -1,0 +1,410 @@
+---
+title: "FINAL"
+author: "idan"
+date: "6/15/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup,include=FALSE, message = FALSE,warn=-1,results="hide"}
+knitr::opts_chunk$set(echo = TRUE)
+options(warn=-1)
+```
+
+```{r load-packages,echo=FALSE, message = FALSE,warning=FALSE,results="hide"}
+library(knitr)
+library(haven)
+library(tidyverse)
+library('tidyr')
+library(broom)
+library(htmltools)
+library(dplyr)
+library(MASS)
+library(ggplot2)
+library(InformationValue)
+library(cvms)
+library(tibble)
+library(ggalt)
+# tinytex::install_tinytex()
+```
+
+```{r,echo=FALSE, message = FALSE,warning=FALSE,include=FALSE,results="hide"}
+#DATA IMPORT
+set.seed(223)
+child_risk_t12 <- read_sav("C:/Users/idanh/Downloads/child_risk_t12.sav")
+View(child_risk_t12)
+X3rd_assessment <- read_sav("C:/Users/idanh/Downloads/3rd assessment.sav")
+View(X3rd_assessment)
+```
+
+
+```{r,echo=FALSE, message = FALSE,warning=FALSE,include=FALSE,results="hide"}
+#DATA CLEANING
+names(X3rd_assessment)[names(X3rd_assessment) == 'T3interviewee_number'] <- 'serial_number'
+f_dat=merge(child_risk_t12,X3rd_assessment,by=c("serial_number"))
+d1<-f_dat%>%
+  dplyr::select(serial_number,grades,ParentMeet,ParentPhone,FamilSupp,T3education_level,T3Adverse_Events_2,T3Adverse_Events_3,T3Adverse_Events_4,T3Adverse_Events_5,T3Adverse_Events_8,T3Adverse_Events_9,T3_ACE_2,T3_ACE_3,T3_ACE_8,T3_ACE_9,T3_10.160,T3_mentor01)
+
+d2 <- d1 %>%
+  group_by(serial_number) %>%
+  summarise(serial_number=max(serial_number),
+            grades=max(grades),
+            ParentMeet=max(ParentMeet),
+            ParentPhone=max(ParentPhone),
+            FamilSupp=max(FamilSupp),
+            T3education_level=max(T3education_level),
+            T3Adverse_Events_2=max(T3Adverse_Events_2),
+            T3Adverse_Events_3=max(T3Adverse_Events_3),
+            T3Adverse_Events_4=max(T3Adverse_Events_4),
+            T3Adverse_Events_5=max(T3Adverse_Events_5),
+            T3Adverse_Events_8=max(T3Adverse_Events_8),
+            T3Adverse_Events_9=max(T3Adverse_Events_9),
+            T3_ACE_2=max(T3_ACE_2),T3_ACE_3=max(T3_ACE_3),T3_ACE_8=max(T3_ACE_8),
+            T3_ACE_9=max(T3_ACE_9),T3_10.160=max(T3_10.160),
+            T3_mentor01=max(T3_mentor01))
+d2<-d2%>%
+  dplyr::select(ParentMeet,ParentPhone,FamilSupp,T3education_level,T3Adverse_Events_2,T3Adverse_Events_3,T3Adverse_Events_4,T3Adverse_Events_5,T3Adverse_Events_8,T3Adverse_Events_9,T3_ACE_2,T3_ACE_3,T3_ACE_8,T3_ACE_9,T3_10.160,T3_mentor01)
+d0<-d2%>%
+  na.omit(d0)
+summary(d0)
+d123<-d0 %>%
+      mutate(T3Adverse_Events_2 = ifelse(T3Adverse_Events_2 == 1,0,1))%>%
+  mutate(T3Adverse_Events_3 = ifelse(T3Adverse_Events_3 == 1,0,1))%>%
+  mutate(T3Adverse_Events_4 = ifelse(T3Adverse_Events_4 == 1,0,1))%>%
+  mutate(T3Adverse_Events_5 = ifelse(T3Adverse_Events_5 == 1,0,1))%>%
+  mutate(T3Adverse_Events_8 = ifelse(T3Adverse_Events_8 == 1,0,1))%>%
+  mutate(T3Adverse_Events_9 = ifelse(T3Adverse_Events_9 == 1,0,1))%>%
+  mutate(T3_ACE_2= ifelse(T3_ACE_2 == 1,0,1))%>%
+  mutate(T3_ACE_3 = ifelse(T3_ACE_3 == 1,0,1))%>%
+  mutate(T3_ACE_8 = ifelse(T3_ACE_8 == 1,0,1))%>%
+  mutate(T3_ACE_9 = ifelse(T3_ACE_9 == 1,0,1))%>%
+  mutate(T3_10.160 = ifelse(T3_10.160 == 2,0,1))%>%
+  mutate(T3_mentor01 = ifelse(T3_mentor01 == 1,0,1))
+d123<-subset(d123, T3education_level != 7)
+d123<-subset(d123, T3education_level != 8)
+d123$T3education_level[d123$T3education_level == 6] <- 7
+d123$T3education_level[d123$T3education_level == 5] <- 6
+d123$T3education_level[d123$T3education_level == 4] <- 5
+d123$T3education_level[d123$T3education_level == 3] <- 4 
+d123$T3education_level[d123$T3education_level == 2] <- 3
+d123$T3education_level[d123$T3education_level == 1] <- 2
+d123$T3education_level[d123$T3education_level == 9] <- 1
+d123$traumaticevents <-rowSums(d123[,c(5,6,7,8,9,10,11,12,13,14)],na.rm=TRUE)
+d123 <- d123 %>% 
+  mutate(TraumaEvent = if_else(traumaticevents == 0, 0, 1))
+d123 <- d123 %>% 
+  mutate(HighEducation = if_else(T3education_level >= 5, 1, 0))
+colnames(d123)[colnames(d123) %in% c("T3education_level","T3Adverse_Events_2","T3Adverse_Events_3","T3Adverse_Events_4","T3Adverse_Events_5","T3Adverse_Events_8","T3Adverse_Events_9","T3_ACE_2","T3_ACE_3","T3_ACE_8","T3_ACE_9","T3_mentor01","T3_10.160")]<- c("Education_Level","Sudden_Death","Parents_Divorce","Financial_Crisis","Life_Threatning_Event","Bullied_By_Students","Sexually_Abused_By_Students","Beaten_By_Adult","Sexually_Abused_By_Adult","Mentally_Ill_Family_Member","Relative_In_Jail","Mentor","Person_To_Rely_On")
+dtrial<-d123
+
+```
+
+
+We will divide our data into train and test groups. Train group will contain 80 percent of the original data, and the Test group will contain 20 percent.
+```{r,echo=FALSE, message = FALSE,warning=FALSE,include=FALSE}
+#Negative Linear Regression
+
+set.seed(1)
+row.number <- sample(1:nrow(d0), 0.8*nrow(d0))
+train = d123[row.number,]
+test = d123[-row.number,]
+dim(train)
+dim(test)
+```
+We will use both direction stepwise selection in order to determine features to use in our model, we will complete the procedure twice, once for positive features and a second time for negative features. 
+
+```{r,echo=FALSE,warning=FALSE}
+#Positive Features step wise
+# Fit the full model 
+full.model <- lm(Education_Level ~ParentPhone+Mentor+FamilSupp+Person_To_Rely_On, data = train)
+# Stepwise regression model
+step.model <- stepAIC(full.model, direction = "both", 
+                      trace = FALSE)
+summary(step.model)
+```
+We will proceed to create a regression model using the selected variable from the positive variables - Parent Phone (the only distinct variable selected by stepwise).
+
+```{r,echo=FALSE,warning=FALSE}
+#positive
+model1 = lm((Education_Level)~ParentPhone, data=train)
+# summary(model1)
+pred1 <- predict(model1, newdata = test)
+rmse <- sqrt(sum((exp(pred1) - test$Education_Level)^2)/length(test$Education_Level))
+pp<-c(RMSE=rmse, R2=summary(model1)$r.squared)
+print(pp)
+```
+From the R-Squared value we can learn that the model is not distinct, so we proceed to create models for the positive and negative variable we are interested in testing.
+
+Positive Linear Regression including Family Support,Mentoring, Parent Phone & Person to rely on.
+```{r,echo=FALSE,warning=FALSE}
+#positive
+model1 = lm((Education_Level)~ParentPhone+Mentor+FamilSupp+Person_To_Rely_On, data=train)
+# summary(model1)
+pred1 <- predict(model1, newdata = test)
+rmse <- sqrt(sum((exp(pred1) - test$Education_Level)^2)/length(test$Education_Level))
+pp<-c(RMSE=rmse, R2=summary(model1)$r.squared)
+print(pp)
+```
+
+```{r,echo=FALSE,warning=FALSE}
+#Negative StepWise
+# Fit the full model 
+full.model <- lm(Education_Level ~Sudden_Death+Parents_Divorce+Financial_Crisis+Life_Threatning_Event+Bullied_By_Students+Sexually_Abused_By_Students+Beaten_By_Adult+Sexually_Abused_By_Adult+Mentally_Ill_Family_Member+Relative_In_Jail, data = train)
+# Stepwise regression model
+step.model <- stepAIC(full.model, direction = "both", 
+                      trace = FALSE)
+summary(step.model)
+```
+We can see there are no distinct variables, we will proceed to perform a linear regression model on negative variables including different traumatic events & crises
+```{r,echo=FALSE,warning=FALSE}
+#negative
+model2 = lm((Education_Level)~Sudden_Death+Parents_Divorce+Financial_Crisis+Life_Threatning_Event+Bullied_By_Students+Sexually_Abused_By_Students+Beaten_By_Adult+Sexually_Abused_By_Adult+Mentally_Ill_Family_Member+Relative_In_Jail, data=train)
+# summary(model2)
+pred2 <- predict(model2, newdata = test)
+rmse2 <- sqrt(sum((exp(pred2) - test$Education_Level)^2)/length(test$Education_Level))
+pn<-c(RMSE = rmse2, R2=summary(model2)$r.squared)
+print(pn)
+```
+After building the two multi-variable regressions above, divided to positive and negative variables. We can conclude from the very high p-values of the variables and low R-Squared value that there is no distinction in the model.
+
+
+The next step we will divide the education level to binomial values.
+We will define every education level from 5 and higher as high education(value=1) meaning they finished Yud Gimel-Yud Daled,BA or MA/MD. Also, for every education level below 5 as low education (value=0).
+
+We will now perform logistic regression twice for positive and negative variables and examine our model with different parameters.
+
+Negative Logistic Regression:
+```{r,echo=FALSE,warning=FALSE}
+model3<- glm(HighEducation~Sudden_Death+Parents_Divorce+Financial_Crisis+Life_Threatning_Event+Bullied_By_Students+Sexually_Abused_By_Students+Beaten_By_Adult+Sexually_Abused_By_Adult+Mentally_Ill_Family_Member+Relative_In_Jail,family="binomial",data = train)
+summary(model3)
+```
+We can see that the variables that received the lower P-values are "Life Threatening Event" and "Mental Ill Family Member", meaning these variables impacted the model the most.
+
+Assessing Model Fit:
+
+```{r,echo=FALSE,warning=FALSE}
+pscl::pR2(model3)["McFadden"]
+```
+We can see that the McFadden's R2 for our model is quite high, which indicates that our model fits the data well and has high predictive power.
+
+Variable Importance:
+We are going to compute the importance of each predictor variable by using a variable importance function: 
+
+```{r,echo=FALSE,warning=FALSE}
+caret::varImp(model3)
+```
+From the results above we can determine that  there are few variables with higher importance such as  "Mentally Ill Family Member" and "Life Threatening Event". These results match the p-values in our model.
+
+VIF Values:
+We will check multi-collinearity of the variables by calculating their VIF values.
+```{r,echo=FALSE,warning=FALSE}
+car::vif(model3)
+```
+From the VIF Values above we can assume that there is not multicollinearity in our model since there are no values greater than 5.
+
+Model Analysis:
+Optimal Value:
+We will find the optimal value for cutoff, meaning every value predicted greater than the cutoff value will be classified as higher education, and every value less than the cut off value will be classified as lower education.
+```{r,echo=FALSE,warning=FALSE}
+predicted<-predict(model3,test,type="response")
+optimal<-optimalCutoff(test$HighEducation,predicted)[1]
+optimal
+```
+We will create a confusion matrix based on the optimal cutoff value, which shows our prediction compared to the actual High Education classification.
+
+```{r,echo=FALSE,warning=FALSE}
+t1<- data.frame(predicted,Education=test$HighEducation)
+t1<-t1 %>% mutate(predicted= ifelse(predicted <= optimal,0,1))
+conf_mat1 <- confusion_matrix(targets = t1$predicted,
+                             predictions = t1$Education)
+plot_confusion_matrix(
+  conf_mat1$`Confusion Matrix`[[1]],
+  font_counts = font(
+    size = 6,
+    angle = 0,
+    color = "black"
+  ),
+  add_normalized = FALSE,
+  add_col_percentages = FALSE,
+  add_row_percentages = FALSE
+)
+```
+Misclassification Error Rate
+```{r,echo=FALSE,warning=FALSE}
+ misClassError(test$HighEducation,predicted,threshold = optimal)
+```
+
+The total misclassification error rate is 8.82% for our model, meaning our model has high accuracy.
+
+ROC
+```{r,echo=FALSE,warning=FALSE}
+plotROC(test$HighEducation,predicted)
+```
+We can see from the graph that the AUROC (area under the curve) is considerably high meaning we have good accuracy, and our model can predict if the child received high education.
+
+Positive Logistic Regression:
+```{r,echo=FALSE,warning=FALSE}
+model4<- glm(HighEducation~ParentPhone+Mentor+FamilSupp+Person_To_Rely_On,family="binomial",data = train)
+summary(model4)
+```
+We can see that the variable that received a lower P-value is "Family Support" meaning this variable impacted the model the most.
+
+Assessing Model Fit:
+
+```{r,echo=FALSE,warning=FALSE}
+pscl::pR2(model4)["McFadden"]
+```
+We can see that the McFadden's R2 for our model is quite low, which indicates that our model does not fit the data well and has low predictive power.
+
+Variable Importance:
+We are going to compute the importance of each predictor variable by using a variable importance function: 
+
+```{r,echo=FALSE,warning=FALSE}
+caret::varImp(model4)
+```
+From the results above we can determine that  there is a single variable with high importance, variable "Family Support". This matches the p-value in our model.
+
+VIF Values:
+We will check multi-collinearity of the variables by calculating their VIF values.
+```{r,echo=FALSE,warning=FALSE}
+car::vif(model4)
+```
+From the VIF Values above we can assume that there is no multi-collinearity in our model since there are no values greater than 5.
+
+
+
+Model Analysis:
+Optimal Value:
+We will find the optimal value for cutoff, meaning every value predicted greater than the cutoff value will be classified as higher education, and every value less than the cut off value will be classified as lower education.
+```{r,echo=FALSE,warning=FALSE}
+predicted2<-predict(model4,test,type="response")
+optimal2<-optimalCutoff(test$HighEducation,predicted2)[1]
+optimal2
+```
+
+We will create a confusion matrix based on the optimal cutoff value, which shows our prediction compared to the actual High Education classification.
+
+
+```{r,echo=FALSE,warning=FALSE}
+t<- data.frame(predicted2,Education=test$HighEducation)
+t<-t %>% mutate(predicted2= ifelse(predicted2 <= optimal2,0,1))
+conf_mat <- confusion_matrix(targets = t$predicted2,
+                             predictions = t$Education)
+plot_confusion_matrix(
+  conf_mat$`Confusion Matrix`[[1]],
+  font_counts = font(
+    size = 6,
+    angle = 0,
+    color = "black"
+  ),
+  add_normalized = FALSE,
+  add_col_percentages = FALSE,
+  add_row_percentages = FALSE
+)
+```
+
+Misclassification Error Rate
+```{r,echo=FALSE,warning=FALSE}
+misClassError(test$HighEducation,t$predicted2,threshold = optimal2)
+
+```
+The total misclassification error rate is 5.88% for our model,meaning this model has lower accuracy than the negative variable model.
+
+ROC
+```{r,Echo=FALSE,warning=FALSE}
+plotROC(test$HighEducation,predicted2)
+```
+We can see from the graph that the AUROC (area under the curver) is considerably high meaning we have good accuracy, and our model and predict the child's education level accurately.
+
+```{r,echo=FALSE,warning=FALSE}
+d123_select <- d123[d123$Education_Level >= 5 & 
+                            d123$Mentor == 1, ]
+
+# Plot
+ggplot(d123, aes(x=traumaticevents, y=Education_Level)) + 
+  geom_point(aes(col=factor(Mentor))) +xlim(c(0, 7)) + 
+  ylim(c(0, 10))+   # draw points
+    # draw smoothing line
+  geom_encircle(aes(x=traumaticevents, y=Education_Level), 
+                data=d123_select, 
+                color="red", 
+                size=2, 
+                expand=0.08) +   # encircle
+  labs(subtitle="Traumatic Events Vs Education Level", 
+       y="Education Level", 
+       x="Number of Traumatic Events", 
+       title="Scatterplot + Encircle", 
+       caption="Source: midwest")
+```
+
+```{r,echo=FALSE,warning=FALSE}
+theme_set(theme_classic())
+#Histogram on a Continuous (Numeric) Variable
+d12<-d123
+d12$Education_Level <- as.character(d12$Education_Level)
+d12$Education_Level[d12$Education_Level==1]<-"Did not recieve certificate"
+d12$Education_Level[d12$Education_Level==2]<-"Finished Elementary School or Middle School"
+d12$Education_Level[d12$Education_Level==3]<-"Finished Highschool without Bagrut"
+d12$Education_Level[d12$Education_Level==4]<-"Finished Highschool with Bagrut"
+d12$Education_Level[d12$Education_Level==5]<-"Finished Highschool and grade YudGimel/YudDaled"
+d12$Education_Level[d12$Education_Level==6]<-"Finished BA"
+d12$Education_Level[d12$Education_Level==7]<-"Finished MA/MD"
+
+ 
+
+g1<-ggplot(d12,aes(x=traumaticevents,fill=factor(Education_Level)))+geom_bar(stat="count",position="fill")+labs(x="Number of Traumatic Events",y="Percentage(%)",fill="Education Level",title="Connection Between Number of Traumatic Events and Education Level")+theme_classic()
+g1
+```
+
+```{r,echo=FALSE}
+
+d12$Life_Threatning_Event[d12$Life_Threatning_Event==0]<-"No"
+d12$Life_Threatning_Event[d12$Life_Threatning_Event==1]<-"Yes"
+d12$HighEducation[d12$HighEducation==0]<-"No"
+d12$HighEducation[d12$HighEducation==1]<-"Yes"
+d12$Mentally_Ill_Family_Member[d12$Mentally_Ill_Family_Member==0]<-"No"
+d12$Mentally_Ill_Family_Member[d12$Mentally_Ill_Family_Member==1]<-"Yes"
+d12$Mentor[d12$Mentor==0]<-"No Mentor"
+d12$Mentor[d12$Mentor==1]<-"Mentor"
+g2<-ggplot(d12,aes(x=Life_Threatning_Event,fill=HighEducation))+geom_bar(stat="count",position="fill")+labs(x="Experienced Life Threatening Event",y="Percentage(%)",fill="High Education",title="Connection Between a Life Threatening Event experience and High Education",subtitle="Distributed by having a mentor or not")+theme_classic()+facet_grid(facets="Mentor")+
+  coord_flip()+scale_fill_manual("High Education", values = c("Yes" = "dark green", "No" = "dark red"))
+g2
+```
+
+```{r,echo=FALSE}
+
+g1<-ggplot(d12,aes(x=factor(FamilSupp),fill=HighEducation))+geom_bar(stat="count",position="fill")+labs(x="Family Support",y="Percentage",fill="High Education",title="Connection Between Family Support and High Education Level")+theme_classic()+theme(axis.text.x=element_text(angle=45,vjust=0.5)) 
+g1
+```
+
+```{r,echo=FALSE}
+d12$TraumaEvent[d12$TraumaEvent==0]<-"No"
+d12$TraumaEvent[d12$TraumaEvent==1]<-"Yes"
+
+```
+
+```{r,echo=FALSE}
+g2<-ggplot(d12,aes(x=Mentally_Ill_Family_Member,fill=factor(HighEducation)))+geom_bar(stat="count",position="fill")+labs(x="Mentally Ill Family Member",y="Percentage(%)",fill="HighEducation",title="Connection Between Mentally Ill Family Member and High Education",subtitle="Distributed by Family Support")+theme_classic()+facet_grid(facets="FamilSupp")+
+  coord_flip()+scale_fill_manual("High Education", values = c("Yes" = "dark green", "No" = "dark red"))
+
+g2
+```
+
+```{r,echo=FALSE}
+g2<-ggplot(d12,aes(x=Life_Threatning_Event,fill=factor(HighEducation)))+geom_bar(stat="count",position="fill")+labs(x="Life Threatening Event",y="Percentage(%)",fill="HighEducation",title="Connection Between Life Threatening Event and High Education",subtitle="Distributed by Family Support")+theme_classic()+facet_grid(facets="FamilSupp")+
+  coord_flip()+scale_fill_manual("High Education", values = c("Yes" = "dark green", "No" = "dark red"))
+
+g2
+```
+
+
+
+
+
+
+
+ 
+
+
+
