@@ -8,8 +8,8 @@ and how different types of support can influence the level of education recieved
 
 Requirements
 ------------
-In order to use our rmd and replicate our analysis, you need to import three datasets of the three different surveys conducted on the at-risk youth.
+In order to use our rmd and replicate our analysis, you need to import two datasets of the two different surveys conducted on the at-risk youth.
 Make sure all the imports at the beginning of the code are installed.
 Inside the rmd code file, there is a line with a hyperlink to a file, make sure you change this link to the location the data set is saved on your computer.
-Run the code!
 
+Run the code!
