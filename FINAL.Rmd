@@ -26,7 +26,6 @@ library(InformationValue)
 library(cvms)
 library(tibble)
 library(ggalt)
-# tinytex::install_tinytex()
 ```
 
 ```{r,echo=FALSE, message = FALSE,warning=FALSE,include=FALSE,results="hide"}
@@ -37,7 +36,6 @@ View(child_risk_t12)
 X3rd_assessment <- read_sav("C:/Users/idanh/Downloads/3rd assessment.sav")
 View(X3rd_assessment)
 ```
-
 
 ```{r,echo=FALSE, message = FALSE,warning=FALSE,include=FALSE,results="hide"}
 #DATA CLEANING
@@ -99,8 +97,6 @@ colnames(d123)[colnames(d123) %in% c("T3education_level","T3Adverse_Events_2","T
 dtrial<-d123
 
 ```
-
-
 We will divide our data into train and test groups. Train group will contain 80 percent of the original data, and the Test group will contain 20 percent.
 ```{r,echo=FALSE, message = FALSE,warning=FALSE,include=FALSE}
 #Negative Linear Regression
@@ -128,7 +124,6 @@ We will proceed to create a regression model using the selected variable from th
 ```{r,echo=FALSE,warning=FALSE}
 #positive
 model1 = lm((Education_Level)~ParentPhone, data=train)
-# summary(model1)
 pred1 <- predict(model1, newdata = test)
 rmse <- sqrt(sum((exp(pred1) - test$Education_Level)^2)/length(test$Education_Level))
 pp<-c(RMSE=rmse, R2=summary(model1)$r.squared)
@@ -140,7 +135,6 @@ Positive Linear Regression including Family Support,Mentoring, Parent Phone & Pe
 ```{r,echo=FALSE,warning=FALSE}
 #positive
 model1 = lm((Education_Level)~ParentPhone+Mentor+FamilSupp+Person_To_Rely_On, data=train)
-# summary(model1)
 pred1 <- predict(model1, newdata = test)
 rmse <- sqrt(sum((exp(pred1) - test$Education_Level)^2)/length(test$Education_Level))
 pp<-c(RMSE=rmse, R2=summary(model1)$r.squared)
@@ -151,7 +145,6 @@ print(pp)
 #Negative StepWise
 # Fit the full model 
 full.model <- lm(Education_Level ~Sudden_Death+Parents_Divorce+Financial_Crisis+Life_Threatning_Event+Bullied_By_Students+Sexually_Abused_By_Students+Beaten_By_Adult+Sexually_Abused_By_Adult+Mentally_Ill_Family_Member+Relative_In_Jail, data = train)
-# Stepwise regression model
 step.model <- stepAIC(full.model, direction = "both", 
                       trace = FALSE)
 summary(step.model)
@@ -160,14 +153,12 @@ We can see there are no distinct variables, we will proceed to perform a linear 
 ```{r,echo=FALSE,warning=FALSE}
 #negative
 model2 = lm((Education_Level)~Sudden_Death+Parents_Divorce+Financial_Crisis+Life_Threatning_Event+Bullied_By_Students+Sexually_Abused_By_Students+Beaten_By_Adult+Sexually_Abused_By_Adult+Mentally_Ill_Family_Member+Relative_In_Jail, data=train)
-# summary(model2)
 pred2 <- predict(model2, newdata = test)
 rmse2 <- sqrt(sum((exp(pred2) - test$Education_Level)^2)/length(test$Education_Level))
 pn<-c(RMSE = rmse2, R2=summary(model2)$r.squared)
 print(pn)
 ```
 After building the two multi-variable regressions above, divided to positive and negative variables. We can conclude from the very high p-values of the variables and low R-Squared value that there is no distinction in the model.
-
 
 The next step we will divide the education level to binomial values.
 We will define every education level from 5 and higher as high education(value=1) meaning they finished Yud Gimel-Yud Daled,BA or MA/MD. Also, for every education level below 5 as low education (value=0).
@@ -272,8 +263,6 @@ car::vif(model4)
 ```
 From the VIF Values above we can assume that there is no multi-collinearity in our model since there are no values greater than 5.
 
-
-
 Model Analysis:
 Optimal Value:
 We will find the optimal value for cutoff, meaning every value predicted greater than the cutoff value will be classified as higher education, and every value less than the cut off value will be classified as lower education.
@@ -284,7 +273,6 @@ optimal2
 ```
 
 We will create a confusion matrix based on the optimal cutoff value, which shows our prediction compared to the actual High Education classification.
-
 
 ```{r,echo=FALSE,warning=FALSE}
 t<- data.frame(predicted2,Education=test$HighEducation)
@@ -320,8 +308,6 @@ We can see from the graph that the AUROC (area under the curver) is considerably
 ```{r,echo=FALSE,warning=FALSE}
 d123_select <- d123[d123$Education_Level >= 5 & 
                             d123$Mentor == 1, ]
-
-# Plot
 ggplot(d123, aes(x=traumaticevents, y=Education_Level)) + 
   geom_point(aes(col=factor(Mentor))) +xlim(c(0, 7)) + 
   ylim(c(0, 10))+   # draw points
@@ -350,15 +336,11 @@ d12$Education_Level[d12$Education_Level==4]<-"Finished Highschool with Bagrut"
 d12$Education_Level[d12$Education_Level==5]<-"Finished Highschool and grade YudGimel/YudDaled"
 d12$Education_Level[d12$Education_Level==6]<-"Finished BA"
 d12$Education_Level[d12$Education_Level==7]<-"Finished MA/MD"
-
- 
-
 g1<-ggplot(d12,aes(x=traumaticevents,fill=factor(Education_Level)))+geom_bar(stat="count",position="fill")+labs(x="Number of Traumatic Events",y="Percentage(%)",fill="Education Level",title="Connection Between Number of Traumatic Events and Education Level")+theme_classic()
 g1
 ```
 
 ```{r,echo=FALSE}
-
 d12$Life_Threatning_Event[d12$Life_Threatning_Event==0]<-"No"
 d12$Life_Threatning_Event[d12$Life_Threatning_Event==1]<-"Yes"
 d12$HighEducation[d12$HighEducation==0]<-"No"
@@ -373,7 +355,6 @@ g2
 ```
 
 ```{r,echo=FALSE}
-
 g1<-ggplot(d12,aes(x=factor(FamilSupp),fill=HighEducation))+geom_bar(stat="count",position="fill")+labs(x="Family Support",y="Percentage",fill="High Education",title="Connection Between Family Support and High Education Level")+theme_classic()+theme(axis.text.x=element_text(angle=45,vjust=0.5)) 
 g1
 ```
@@ -387,24 +368,11 @@ d12$TraumaEvent[d12$TraumaEvent==1]<-"Yes"
 ```{r,echo=FALSE}
 g2<-ggplot(d12,aes(x=Mentally_Ill_Family_Member,fill=factor(HighEducation)))+geom_bar(stat="count",position="fill")+labs(x="Mentally Ill Family Member",y="Percentage(%)",fill="HighEducation",title="Connection Between Mentally Ill Family Member and High Education",subtitle="Distributed by Family Support")+theme_classic()+facet_grid(facets="FamilSupp")+
   coord_flip()+scale_fill_manual("High Education", values = c("Yes" = "dark green", "No" = "dark red"))
-
 g2
 ```
 
 ```{r,echo=FALSE}
 g2<-ggplot(d12,aes(x=Life_Threatning_Event,fill=factor(HighEducation)))+geom_bar(stat="count",position="fill")+labs(x="Life Threatening Event",y="Percentage(%)",fill="HighEducation",title="Connection Between Life Threatening Event and High Education",subtitle="Distributed by Family Support")+theme_classic()+facet_grid(facets="FamilSupp")+
   coord_flip()+scale_fill_manual("High Education", values = c("Yes" = "dark green", "No" = "dark red"))
-
 g2
 ```
-
-
-
-
-
-
-
- 
-
-
-
