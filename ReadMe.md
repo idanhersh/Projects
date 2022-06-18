@@ -11,6 +11,6 @@ Requirements
 In order to use our rmd and replicate our analysis, you need to import two datasets of the two different surveys conducted on the at-risk youth.
 Make sure all the imports at the beginning of the code are installed.
 Inside the rmd code file, there is a line with a hyperlink to the files, make sure you change this link to the location the data set is saved on your computer.
-The import command is for a sav file, if you choose to import the file as a csv file make sure to change the import line as well.
+The import command is for an sav file, if you choose to import the file as a csv file make sure to change the import line as well.
 
 Run the code!
